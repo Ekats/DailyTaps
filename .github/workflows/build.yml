@@ -69,7 +69,11 @@ jobs:
 
       # Last, so lint findings never hold back the test APK.
       - name: Lint
-        run: ./gradlew :app:lintRelease
+        run: |
+          ./gradlew :app:lintRelease || {
+            cat app/build/intermediates/lint_intermediate_text_report/release/lintReportRelease/lint-results-release.txt
+            exit 1
+          }
 
       - name: Upload reports on failure
         if: failure()

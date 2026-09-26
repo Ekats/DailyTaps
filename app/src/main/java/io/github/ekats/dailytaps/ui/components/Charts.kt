@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -48,7 +49,6 @@ import io.github.ekats.dailytaps.domain.ValuePoint
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle as DateTextStyle
-import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.log10
@@ -298,7 +298,7 @@ fun CalendarHeatmap(
     val start = LocalDate.ofEpochDay(days.first().epochDay)
     val offset = ((start.dayOfWeek.value - firstDay.value) + 7) % 7
     val weeks = (offset + days.size + 6) / 7
-    val locale = Locale.getDefault()
+    val locale = LocalResources.current.configuration.locales[0]
 
     fun bucket(v: Double): Color {
         if (v <= 0 || maxV <= 0) return empty

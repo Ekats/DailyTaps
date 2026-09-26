@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -185,7 +186,7 @@ fun StatsScreen(boardId: Long?, onBack: () -> Unit) {
                         days = days,
                         // Done/not-done has only one "on" step: use the ramp's strongest color.
                         ramp = if (slot != null) listOf(ramp[3]) else ramp,
-                        firstDay = WeekFields.of(Locale.getDefault()).firstDayOfWeek,
+                        firstDay = WeekFields.of(LocalResources.current.configuration.locales[0]).firstDayOfWeek,
                         hint = stringResource(R.string.tap_day_hint),
                         describe = { d ->
                             if (slot != null) {

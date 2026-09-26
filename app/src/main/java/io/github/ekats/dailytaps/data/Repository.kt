@@ -170,6 +170,16 @@ class Repository(
         onChanged()
     }
 
+    /** Sets several labels at once (the label table's row/column repeat). */
+    suspend fun setLabels(labels: Map<Long, String>) {
+        db.withTransaction {
+            labels.forEach { (id, label) ->
+                slots.slot(id)?.let { if (it.label != label) slots.update(it.copy(label = label)) }
+            }
+        }
+        onChanged()
+    }
+
     /** Copies colors (and text settings) of [source] to every slot of its board with the same type. */
     suspend fun applyStyleToBoard(source: SlotEntity) {
         val all = slots.slots(source.boardId)

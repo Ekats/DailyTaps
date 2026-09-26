@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.SolidColor
@@ -21,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -128,9 +131,7 @@ fun BoardSettingsScreen(boardId: Long, onBack: () -> Unit, onEditSlot: (Long) ->
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                LabelTable(current, onLabelChange = { slot, label ->
-                    scope.launch { repo.updateSlotConfig(slot.copy(label = label)) }
-                })
+                LabelTable(current, onLabelsChange = { labels -> scope.launch { repo.setLabels(labels) } })
                 Stepper(
                     stringResource(R.string.label_size),
                     board.labelSizeSp,
@@ -153,7 +154,7 @@ fun BoardSettingsScreen(boardId: Long, onBack: () -> Unit, onEditSlot: (Long) ->
                 if (board.colHeaderMode == HeaderMode.CUSTOM) {
                     Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         for (c in 0 until board.cols) {
-                            CompactField(
+                            RememberedCompactField(
                                 key = "col$c",
                                 value = board.colHeaders.getOrElse(c) { "" },
                                 hint = "${'A' + c}",
@@ -166,7 +167,7 @@ fun BoardSettingsScreen(boardId: Long, onBack: () -> Unit, onEditSlot: (Long) ->
                 if (board.showRowHeaders) {
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         for (r in 0 until board.rows) {
-                            CompactField(
+                            RememberedCompactField(
                                 key = "row$r",
                                 value = board.rowHeaders.getOrElse(r) { "" },
                                 hint = "${r + 1}",
@@ -209,41 +210,83 @@ fun BoardSettingsScreen(boardId: Long, onBack: () -> Unit, onEditSlot: (Long) ->
     }
 }
 
-/** One compact text field per slot, laid out like the board, for filling in labels quickly. */
+/**
+ * One compact text field per slot, laid out like the board, for filling in labels quickly. The
+ * ticks along the top and the left repeat what you type across that column or row.
+ */
 @Composable
-private fun LabelTable(data: BoardWithSlots, onLabelChange: (SlotEntity, String) -> Unit) {
+private fun LabelTable(data: BoardWithSlots, onLabelsChange: (Map<Long, String>) -> Unit) {
+    val board = data.board
+    // Local copies keep the cursor steady while saves round-trip; repeats update them directly.
+    val texts = remember(board.id) { mutableStateMapOf<Long, String>() }
+    val repeatRows = remember(board.id) { mutableStateMapOf<Int, Boolean>() }
+    val repeatCols = remember(board.id) { mutableStateMapOf<Int, Boolean>() }
+    val tick = 32.dp
+
+    fun change(slot: SlotEntity, label: String) {
+        val targets = data.visibleSlots.filter {
+            it.id == slot.id ||
+                (repeatRows[slot.row] == true && it.row == slot.row) ||
+                (repeatCols[slot.col] == true && it.col == slot.col)
+        }
+        targets.forEach { texts[it.id] = label }
+        onLabelsChange(targets.associate { it.id to label })
+    }
+
     Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        for (r in 0 until data.board.rows) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (c in 0 until data.board.cols) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(tick))
+            for (c in 0 until board.cols) {
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Checkbox(
+                        checked = repeatCols[c] == true,
+                        onCheckedChange = { repeatCols[c] = it },
+                        modifier = Modifier.size(tick),
+                    )
+                }
+            }
+        }
+        for (r in 0 until board.rows) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = repeatRows[r] == true,
+                    onCheckedChange = { repeatRows[r] = it },
+                    modifier = Modifier.size(tick),
+                )
+                for (c in 0 until board.cols) {
                     val slot = data.slotAt(r, c)
                     if (slot == null) {
                         Box(Modifier.weight(1f))
                         continue
                     }
                     CompactField(
-                        key = "slot${slot.id}",
-                        value = slot.label,
+                        value = texts[slot.id] ?: slot.label,
                         hint = "${'A' + c}${r + 1}",
                         modifier = Modifier.weight(1f),
-                    ) { onLabelChange(slot, it) }
+                    ) { change(slot, it) }
                 }
             }
         }
     }
 }
 
-/** A small bordered text field. Keeps its own text so the cursor is steady while saves round-trip. */
+/** [CompactField] that keeps its own text, for fields whose value only comes back through a save. */
 @Composable
-private fun CompactField(key: String, value: String, hint: String, modifier: Modifier = Modifier, onChange: (String) -> Unit) {
+private fun RememberedCompactField(key: String, value: String, hint: String, modifier: Modifier = Modifier, onChange: (String) -> Unit) {
     var text by remember(key) { mutableStateOf(value) }
+    CompactField(text, hint, modifier) {
+        text = it
+        onChange(it)
+    }
+}
+
+/** A small bordered text field, fully controlled by [value]. */
+@Composable
+private fun CompactField(value: String, hint: String, modifier: Modifier = Modifier, onChange: (String) -> Unit) {
     val shape = MaterialTheme.shapes.small
     BasicTextField(
-        value = text,
-        onValueChange = {
-            text = it
-            onChange(it)
-        },
+        value = value,
+        onValueChange = onChange,
         singleLine = true,
         textStyle = MaterialTheme.typography.bodySmall.copy(
             color = MaterialTheme.colorScheme.onSurface,
@@ -257,7 +300,7 @@ private fun CompactField(key: String, value: String, hint: String, modifier: Mod
                     .padding(horizontal = 4.dp, vertical = 10.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                if (text.isEmpty()) {
+                if (value.isEmpty()) {
                     Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                 }
                 inner()

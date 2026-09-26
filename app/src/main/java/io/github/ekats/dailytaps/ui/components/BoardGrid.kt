@@ -99,7 +99,7 @@ fun BoardGrid(
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         // Unbounded height (inside a scrolling column) means width decides the cell size.
         val availW = maxWidth - outer * 2
-        val availH = if (maxHeight.isFinite) maxHeight - outer * 2 - titleHeight else Dp.Infinity
+        val availH = if (maxHeight.value.isFinite()) maxHeight - outer * 2 - titleHeight else Dp.Infinity
         val cell = minOf(availW / board.cols, availH / board.rows).coerceAtLeast(8.dp)
         val gridW = cell * board.cols
 

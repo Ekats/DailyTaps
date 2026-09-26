@@ -187,7 +187,7 @@ fun BoardGrid(
                                             lineHeight = (labelSize * 1.1f).sp,
                                             fontWeight = FontWeight.Medium,
                                             textAlign = TextAlign.Center,
-                                            maxLines = if (look.stateText == null) 3 else 2,
+                                            maxLines = SlotLogic.labelMaxLines((cell - gap).value, labelSize, look.stateText != null),
                                             overflow = TextOverflow.Ellipsis,
                                         )
                                     }

@@ -116,6 +116,17 @@ object SlotLogic {
         else -> (cellDp * 0.22f).coerceIn(8f, 20f) * board.textScale.factor
     }
 
+    /**
+     * How many lines of a [labelSizeSp] label fit in a cell [cellHeightDp] tall, leaving room for
+     * the state text when there is one. Assumes 1sp ~ 1dp; a larger font scale just clips later.
+     */
+    fun labelMaxLines(cellHeightDp: Float, labelSizeSp: Float, hasStateText: Boolean): Int {
+        val lineHeight = labelSizeSp * 1.2f
+        val stateHeight = if (hasStateText) labelSizeSp * 0.85f * 1.3f else 0f
+        val available = cellHeightDp - 6f - stateHeight
+        return (available / lineHeight).toInt().coerceIn(1, 10)
+    }
+
     fun formatValue(value: Double, unit: String = ""): String {
         val number = DecimalFormat("0.##").format(value)
         return if (unit.isBlank()) number else "$number $unit"

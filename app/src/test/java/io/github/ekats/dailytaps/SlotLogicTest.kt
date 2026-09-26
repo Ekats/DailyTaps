@@ -163,3 +163,15 @@ class SlotLogicTest {
         assertEquals(fill, c.stringToFill(c.fillToString(fill)))
     }
 }
+
+class LabelLinesTest {
+    @Test
+    fun `line cap follows the cell height`() {
+        // 12sp label: a 40dp cell fits 2 lines, a 100dp cell fits 6, a tiny cell still shows 1.
+        assertEquals(2, SlotLogic.labelMaxLines(40f, 12f, hasStateText = false))
+        assertEquals(6, SlotLogic.labelMaxLines(100f, 12f, hasStateText = false))
+        assertEquals(1, SlotLogic.labelMaxLines(10f, 12f, hasStateText = false))
+        // State text under the label costs about one line.
+        assertEquals(5, SlotLogic.labelMaxLines(100f, 12f, hasStateText = true))
+    }
+}

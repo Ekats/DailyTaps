@@ -191,6 +191,7 @@ private fun SlotCell(
     val label = look.label.takeIf { it.isNotBlank() }
     val state = look.stateText
 
+    val labelLines = SlotLogic.labelMaxLines(height.value, labelSize, state != null)
     val labelStyle = TextStyle(color = textColor, fontSize = labelSize.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
     val stateStyle = if (label != null) {
         TextStyle(color = textColor, fontSize = (labelSize * 0.85f).sp, textAlign = TextAlign.Center)
@@ -207,10 +208,10 @@ private fun SlotCell(
     ) {
         when {
             label != null && state != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(label, maxLines = 2, style = labelStyle)
+                Text(label, maxLines = labelLines, style = labelStyle)
                 Text(state, maxLines = 1, style = stateStyle)
             }
-            label != null -> Text(label, maxLines = 3, style = labelStyle)
+            label != null -> Text(label, maxLines = labelLines, style = labelStyle)
             state != null -> Text(state, maxLines = 1, style = stateStyle)
         }
     }

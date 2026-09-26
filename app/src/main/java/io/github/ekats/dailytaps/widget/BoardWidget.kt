@@ -186,7 +186,7 @@ private fun SlotCell(
     }
 
     val base = minOf(width.value, height.value)
-    val labelSize = (base * 0.24f).coerceIn(8f, 20f) * board.textScale.factor
+    val labelSize = SlotLogic.labelSizeSp(slot, board, base)
     val textColor = fixed(look.textColor)
     val label = look.label.takeIf { it.isNotBlank() }
     val state = look.stateText

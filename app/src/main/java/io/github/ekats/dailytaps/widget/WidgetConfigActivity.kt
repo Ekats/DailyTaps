@@ -12,10 +12,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -130,7 +130,7 @@ private fun ConfigScreen(
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         BoardGrid(
                             b,
-                            Modifier.width(96.dp).aspectRatio(b.board.cols.toFloat() / b.board.rows.coerceAtLeast(1)),
+                            Modifier.size(96.dp),
                         )
                         Column(Modifier.padding(start = 16.dp)) {
                             Text(b.board.title.ifBlank { stringResource(R.string.untitled_board) }, style = MaterialTheme.typography.titleMedium)

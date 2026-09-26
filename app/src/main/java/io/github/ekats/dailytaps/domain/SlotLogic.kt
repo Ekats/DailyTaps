@@ -106,6 +106,16 @@ object SlotLogic {
         }
     }
 
+    /**
+     * Label size in sp: the slot's own setting, else the board's, else a size that fits the cell
+     * ([cellDp] is the shorter side) scaled by the board's text size.
+     */
+    fun labelSizeSp(slot: SlotEntity, board: BoardEntity, cellDp: Float): Float = when {
+        slot.labelSizeSp > 0 -> slot.labelSizeSp.toFloat()
+        board.labelSizeSp > 0 -> board.labelSizeSp.toFloat()
+        else -> (cellDp * 0.22f).coerceIn(8f, 20f) * board.textScale.factor
+    }
+
     fun formatValue(value: Double, unit: String = ""): String {
         val number = DecimalFormat("0.##").format(value)
         return if (unit.isBlank()) number else "$number $unit"

@@ -18,6 +18,8 @@ data class BoardEntity(
     val cornerRadiusDp: Int = 12,
     val spacingDp: Int = 4,
     val textScale: TextScale = TextScale.MEDIUM,
+    /** Label size in sp for every slot without its own; 0 fits the label to the cell. */
+    val labelSizeSp: Int = 0,
     /** When set, every slot returns to its first state (and counters and values clear) each new day. */
     val resetDaily: Boolean = false,
     val sortOrder: Int = 0,
@@ -49,6 +51,8 @@ data class SlotEntity(
     val enabled: Boolean = true,
     /** Show the state name, count or value under the label. */
     val showStateText: Boolean = false,
+    /** Label size in sp; 0 uses the board's setting. */
+    val labelSizeSp: Int = 0,
     val type: SlotType = SlotType.STATES,
     val states: List<SlotStyle> = Defaults.statesFor(SlotType.STATES),
     val stateIndex: Int = 0,

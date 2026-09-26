@@ -118,6 +118,12 @@ fun SlotEditorScreen(slotId: Long, onBack: () -> Unit) {
                 supportingText = { Text(stringResource(R.string.slot_label_help)) },
                 modifier = Modifier.fillMaxWidth(),
             )
+            Stepper(
+                stringResource(R.string.label_size),
+                slot.labelSizeSp,
+                0..40,
+                format = { if (it == 0) stringResource(R.string.board_default) else "$it sp" },
+            ) { update(slot.copy(labelSizeSp = it)) }
             SwitchRow(
                 stringResource(R.string.show_state_text),
                 slot.showStateText,
@@ -238,7 +244,7 @@ private fun PreviewRow(board: BoardWithSlots, slot: SlotEntity) {
     Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         BoardGrid(
             board.copy(slots = board.slots.map { if (it.id == slot.id) slot else it }),
-            Modifier.weight(1f).aspectRatio(board.board.cols.toFloat() / board.board.rows),
+            Modifier.fillMaxWidth().height(200.dp),
             selected = slot,
             showDisabled = true,
         )

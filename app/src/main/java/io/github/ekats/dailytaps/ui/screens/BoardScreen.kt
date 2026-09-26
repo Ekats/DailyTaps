@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -155,8 +154,7 @@ fun BoardScreen(
             item {
                 BoardGrid(
                     board,
-                    Modifier.fillMaxWidth().heightIn(max = 460.dp)
-                        .aspectRatio(board.board.cols.toFloat() / board.board.rows, matchHeightConstraintsFirst = board.board.rows > board.board.cols),
+                    Modifier.fillMaxWidth().heightIn(max = 480.dp),
                     onSlotClick = { slot ->
                         if (slot.type == SlotType.VALUE) {
                             valueSlot = slot

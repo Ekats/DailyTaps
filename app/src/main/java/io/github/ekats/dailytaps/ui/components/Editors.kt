@@ -74,7 +74,7 @@ fun SwitchRow(label: String, checked: Boolean, modifier: Modifier = Modifier, su
 
 /** A minus / value / plus control for small integers. */
 @Composable
-fun Stepper(label: String, value: Int, range: IntRange, modifier: Modifier = Modifier, format: (Int) -> String = { it.toString() }, onChange: (Int) -> Unit) {
+fun Stepper(label: String, value: Int, range: IntRange, modifier: Modifier = Modifier, format: @Composable (Int) -> String = { it.toString() }, onChange: (Int) -> Unit) {
     Row(modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         FilledTonalIconButton(onClick = { onChange(value - 1) }, enabled = value > range.first) {

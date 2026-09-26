@@ -1,13 +1,22 @@
 package io.github.ekats.dailytaps.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.style.TextAlign
+import io.github.ekats.dailytaps.data.BoardWithSlots
+import io.github.ekats.dailytaps.data.SlotEntity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -82,8 +91,7 @@ fun BoardSettingsScreen(boardId: Long, onBack: () -> Unit, onEditSlot: (Long) ->
             ) {
                 BoardGrid(
                     current,
-                    Modifier.fillMaxWidth().heightIn(max = 240.dp)
-                        .aspectRatio(board.cols.toFloat() / board.rows, matchHeightConstraintsFirst = true),
+                    Modifier.fillMaxWidth().height(240.dp),
                     showDisabled = true,
                     onSlotClick = { onEditSlot(it.id) },
                 )
@@ -114,6 +122,22 @@ fun BoardSettingsScreen(boardId: Long, onBack: () -> Unit, onEditSlot: (Long) ->
                     ColorField(stringResource(R.string.title_color), board.titleColor) { save(board.copy(titleColor = it)) }
                 }
 
+                SectionTitle(stringResource(R.string.section_labels))
+                Text(
+                    stringResource(R.string.labels_help),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LabelTable(current, onLabelChange = { slot, label ->
+                    scope.launch { repo.updateSlotConfig(slot.copy(label = label)) }
+                })
+                Stepper(
+                    stringResource(R.string.label_size),
+                    board.labelSizeSp,
+                    0..40,
+                    format = { if (it == 0) stringResource(R.string.auto) else "$it sp" },
+                ) { save(board.copy(labelSizeSp = it)) }
+
                 SectionTitle(stringResource(R.string.section_layout))
                 Stepper(stringResource(R.string.rows), board.rows, MIN_GRID..MAX_GRID) { save(board.copy(rows = it)) }
                 Stepper(stringResource(R.string.columns), board.cols, MIN_GRID..MAX_GRID) { save(board.copy(cols = it)) }
@@ -142,6 +166,59 @@ fun BoardSettingsScreen(boardId: Long, onBack: () -> Unit, onEditSlot: (Long) ->
                     board.resetDaily,
                     supporting = stringResource(R.string.reset_daily_help),
                 ) { save(board.copy(resetDaily = it)) }
+            }
+        }
+    }
+}
+
+/** One compact text field per slot, laid out like the board, for filling in labels quickly. */
+@Composable
+private fun LabelTable(data: BoardWithSlots, onLabelChange: (SlotEntity, String) -> Unit) {
+    // Local copies keep the cursor steady while the database round trip completes.
+    val texts = remember(data.board.id) { mutableStateMapOf<Long, String>() }
+    val shape = MaterialTheme.shapes.small
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        for (r in 0 until data.board.rows) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (c in 0 until data.board.cols) {
+                    val slot = data.slotAt(r, c)
+                    if (slot == null) {
+                        Box(Modifier.weight(1f))
+                        continue
+                    }
+                    val text = texts[slot.id] ?: slot.label
+                    BasicTextField(
+                        value = text,
+                        onValueChange = {
+                            texts[slot.id] = it
+                            onLabelChange(slot, it)
+                        },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        decorationBox = { inner ->
+                            Box(
+                                Modifier
+                                    .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+                                    .padding(horizontal = 4.dp, vertical = 10.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (text.isEmpty()) {
+                                    Text(
+                                        "${'A' + c}${r + 1}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                }
+                                inner()
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }

@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.ekats.dailytaps.data.BoardWithSlots
@@ -71,8 +72,9 @@ private class CornerRadialBrush(private val colors: List<Color>) : ShaderBrush()
 }
 
 /**
- * Draws a board the way the home screen widget does. With [onSlotClick] set the cells are
- * buttons; [selected] outlines one cell (used by the editor).
+ * Draws a board with square slots. It measures the space it is given, picks the largest square
+ * cell that fits both ways, and wraps its background tightly around the grid. With [onSlotClick]
+ * set the cells are buttons; [selected] outlines one cell (used by the editor).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -88,20 +90,27 @@ fun BoardGrid(
     val board = data.board
     val haptics = LocalHapticFeedback.current
     val gap = board.spacingDp.dp
+    val outer = 4.dp + gap / 2
     val boardShape = RoundedCornerShape((board.cornerRadiusDp + 4).coerceAtMost(28).dp)
     val cellShape = RoundedCornerShape(board.cornerRadiusDp.dp)
+    val hasTitle = board.showTitle && board.title.isNotBlank()
+    val titleHeight = if (hasTitle) (22f * board.textScale.factor).dp else 0.dp
 
-    BoxWithConstraints(
-        modifier = modifier
-            .clip(boardShape)
-            .background(board.background.toBrush(), boardShape)
-            .padding(4.dp + gap / 2),
-    ) {
-        val cellMin = minOf(maxWidth / board.cols, maxHeight / board.rows).value
-        val labelSize = (cellMin * 0.22f).coerceIn(8f, 20f) * board.textScale.factor
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        // Unbounded height (inside a scrolling column) means width decides the cell size.
+        val availW = maxWidth - outer * 2
+        val availH = if (maxHeight.isFinite) maxHeight - outer * 2 - titleHeight else Dp.Infinity
+        val cell = minOf(availW / board.cols, availH / board.rows).coerceAtLeast(8.dp)
+        val gridW = cell * board.cols
 
-        Column(Modifier.fillMaxSize()) {
-            if (board.showTitle && board.title.isNotBlank()) {
+        Column(
+            Modifier
+                .width(gridW + outer * 2)
+                .clip(boardShape)
+                .background(board.background.toBrush(), boardShape)
+                .padding(outer),
+        ) {
+            if (hasTitle) {
                 Text(
                     text = board.title,
                     color = Color(board.titleColor),
@@ -110,18 +119,20 @@ fun BoardGrid(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
-                        .height((22f * board.textScale.factor).dp)
+                        .width(gridW)
+                        .height(titleHeight)
                         .padding(horizontal = gap / 2),
                 )
             }
             for (r in 0 until board.rows) {
-                Row(Modifier.fillMaxWidth().weight(1f)) {
+                Row {
                     for (c in 0 until board.cols) {
-                        Box(Modifier.weight(1f).fillMaxHeight().padding(gap / 2)) {
+                        Box(Modifier.size(cell).padding(gap / 2)) {
                             val slot = data.slotAt(r, c) ?: return@Box
                             if (!slot.enabled && !showDisabled) return@Box
                             val look = SlotLogic.appearance(slot, board, today)
                             val isSelected = selected?.id == slot.id
+                            val labelSize = SlotLogic.labelSizeSp(slot, board, (cell - gap).value)
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()

@@ -82,8 +82,10 @@ fun SlotEditorScreen(slotId: Long, onBack: () -> Unit) {
     val context = LocalContext.current
     val repo = context.repository
     val scope = rememberCoroutineScope()
-    var draft by remember(slotId) { mutableStateOf<SlotEntity?>(null) }
-    LaunchedEffect(slotId) { draft = repo.observeSlot(slotId).filterNotNull().first() }
+    // Tapping another slot in the preview switches the editor to it without leaving the screen.
+    var currentId by rememberSaveable(slotId) { mutableStateOf(slotId) }
+    var draft by remember(currentId) { mutableStateOf<SlotEntity?>(null) }
+    LaunchedEffect(currentId) { draft = repo.observeSlot(currentId).filterNotNull().first() }
     val slot = draft
     val boardData by remember(slot?.boardId) {
         slot?.let { repo.observeBoard(it.boardId) } ?: flowOf(null)
@@ -110,7 +112,13 @@ fun SlotEditorScreen(slotId: Long, onBack: () -> Unit) {
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 32.dp),
         ) {
-            boardData?.let { PreviewRow(it, slot) }
+            boardData?.let { PreviewRow(it, slot, onPick = { currentId = it.id }) }
+            Text(
+                stringResource(R.string.tap_slot_to_switch),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
 
             SectionTitle(stringResource(R.string.section_text))
             var repeatRow by rememberSaveable { mutableStateOf(false) }
@@ -256,7 +264,7 @@ private fun stateTitle(type: SlotType, i: Int): String = when (type) {
 }
 
 @Composable
-private fun PreviewRow(board: BoardWithSlots, slot: SlotEntity) {
+private fun PreviewRow(board: BoardWithSlots, slot: SlotEntity, onPick: (SlotEntity) -> Unit) {
     // The whole board with this slot outlined, and the slot itself shown larger in each state.
     Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         BoardGrid(
@@ -264,6 +272,7 @@ private fun PreviewRow(board: BoardWithSlots, slot: SlotEntity) {
             Modifier.fillMaxWidth().height(200.dp),
             selected = slot,
             showDisabled = true,
+            onSlotClick = { if (it.id != slot.id) onPick(it) },
         )
     }
     Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

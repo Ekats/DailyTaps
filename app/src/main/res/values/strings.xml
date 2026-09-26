@@ -96,6 +96,7 @@
     <string name="section_text">Text</string>
     <string name="slot_label">Label</string>
     <string name="slot_label_help">Shown in the slot. Leave empty for a plain colored button.</string>
+    <string name="tap_slot_to_switch">Tap another slot to edit it.</string>
     <string name="repeat_row">Whole row</string>
     <string name="repeat_column">Whole column</string>
     <string name="show_state_text">Show state under the label</string>

@@ -147,7 +147,15 @@ fun SlotEditorScreen(slotId: Long, onBack: () -> Unit) {
                 stringResource(R.string.label_size),
                 slot.labelSizeSp,
                 0..40,
-                format = { if (it == 0) stringResource(R.string.board_default) else "$it sp" },
+                // 0 follows the board: say what that means instead of pointing elsewhere.
+                format = {
+                    val boardSize = boardData?.board?.labelSizeSp ?: 0
+                    when {
+                        it > 0 -> "$it sp"
+                        boardSize > 0 -> stringResource(R.string.board_size, boardSize)
+                        else -> stringResource(R.string.auto)
+                    }
+                },
             ) { update(slot.copy(labelSizeSp = it)) }
             SwitchRow(
                 stringResource(R.string.show_state_text),

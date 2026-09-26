@@ -72,7 +72,7 @@
     <string name="section_labels">Labels</string>
     <string name="label_size">Label size</string>
     <string name="auto">Auto</string>
-    <string name="board_default">Board setting</string>
+    <string name="board_size">%d sp (board)</string>
     <string name="section_headers">Headers</string>
     <string name="column_headers">Column headers</string>
     <string name="header_none">None</string>

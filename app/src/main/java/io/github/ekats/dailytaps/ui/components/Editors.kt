@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -80,11 +81,13 @@ fun Stepper(label: String, value: Int, range: IntRange, modifier: Modifier = Mod
         FilledTonalIconButton(onClick = { onChange(value - 1) }, enabled = value > range.first) {
             Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.decrease))
         }
+        // Wide enough for words like "Board setting" without wrapping; numbers just get more air.
         Text(
             format(value),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
-            modifier = Modifier.width(56.dp),
+            maxLines = 1,
+            modifier = Modifier.widthIn(min = 56.dp).padding(horizontal = 8.dp),
         )
         FilledTonalIconButton(onClick = { onChange(value + 1) }, enabled = value < range.last) {
             Icon(Icons.Default.Add, contentDescription = stringResource(R.string.increase))

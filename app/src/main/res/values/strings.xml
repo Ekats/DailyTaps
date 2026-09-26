@@ -70,7 +70,6 @@
     <string name="show_title">Show title on widget</string>
     <string name="title_color">Title color</string>
     <string name="section_labels">Labels</string>
-    <string name="labels_help">Type each slot\'s label right where it sits on the board. Tick a row or a column to give every slot in it the same label as you type.</string>
     <string name="label_size">Label size</string>
     <string name="auto">Auto</string>
     <string name="board_default">Board setting</string>

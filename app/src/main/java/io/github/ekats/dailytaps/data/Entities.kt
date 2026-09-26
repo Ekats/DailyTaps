@@ -20,6 +20,12 @@ data class BoardEntity(
     val textScale: TextScale = TextScale.MEDIUM,
     /** Label size in sp for every slot without its own; 0 fits the label to the cell. */
     val labelSizeSp: Int = 0,
+    val colHeaderMode: HeaderMode = HeaderMode.NONE,
+    /** Custom column headers, index = column. Missing entries show nothing. */
+    val colHeaders: List<String> = emptyList(),
+    val showRowHeaders: Boolean = false,
+    /** Row headers, index = row. */
+    val rowHeaders: List<String> = emptyList(),
     /** When set, every slot returns to its first state (and counters and values clear) each new day. */
     val resetDaily: Boolean = false,
     val sortOrder: Int = 0,

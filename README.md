@@ -18,8 +18,9 @@ An Android app for tables of buttons on your home screen, plus graphs of everyth
 - **Looks**: every state has its own fill (solid color or a gradient with 5 directions,
   transparency supported) and text color. The board has its own background (solid or gradient),
   corner radius, spacing and text size.
-- **Text**: optional board title; each slot has an optional label and can show its state name,
-  count or last value under it.
+- **Text**: optional board title; each slot has an optional label (with a board-wide or per-slot
+  size) and can show its state name, count or last value under it. Boards can have column headers
+  (weekdays starting Monday, or custom) and row headers.
 - **Daily reset** (per board): at local midnight every slot goes back to its first state. History
   is kept.
 - **Graphs** per board, per slot or across all boards, for 7 days, 30 days, 90 days or a year:

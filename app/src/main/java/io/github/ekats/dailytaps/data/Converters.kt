@@ -24,4 +24,10 @@ class Converters {
 
     @TypeConverter
     fun stringToStyles(value: String): List<SlotStyle> = DataJson.decodeFromString<List<SlotStyle>>(value)
+
+    @TypeConverter
+    fun stringsToString(list: List<String>): String = DataJson.encodeToString<List<String>>(list)
+
+    @TypeConverter
+    fun stringToStrings(value: String): List<String> = DataJson.decodeFromString<List<String>>(value)
 }

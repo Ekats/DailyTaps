@@ -5,14 +5,17 @@ import io.github.ekats.dailytaps.data.Converters
 import io.github.ekats.dailytaps.data.Defaults
 import io.github.ekats.dailytaps.data.Fill
 import io.github.ekats.dailytaps.data.GradientDirection
+import io.github.ekats.dailytaps.data.HeaderMode
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.data.SlotStyle
 import io.github.ekats.dailytaps.data.SlotType
 import io.github.ekats.dailytaps.domain.ColorMath
+import io.github.ekats.dailytaps.domain.Headers
 import io.github.ekats.dailytaps.domain.SlotLogic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.util.Locale
 
 class SlotLogicTest {
     private val board = BoardEntity(id = 1)
@@ -173,5 +176,21 @@ class LabelLinesTest {
         assertEquals(1, SlotLogic.labelMaxLines(10f, 12f, hasStateText = false))
         // State text under the label costs about one line.
         assertEquals(5, SlotLogic.labelMaxLines(100f, 12f, hasStateText = true))
+    }
+}
+
+class HeadersTest {
+    @Test
+    fun `weekday headers start on Monday and follow the column count`() {
+        val board = BoardEntity(cols = 3, colHeaderMode = HeaderMode.WEEKDAYS)
+        assertEquals(listOf("Mon", "Tue", "Wed"), Headers.columns(board, Locale.ENGLISH))
+        assertNull(Headers.columns(board.copy(colHeaderMode = HeaderMode.NONE), Locale.ENGLISH))
+    }
+
+    @Test
+    fun `custom headers are padded to the grid`() {
+        val board = BoardEntity(cols = 3, rows = 2, colHeaderMode = HeaderMode.CUSTOM, colHeaders = listOf("A"), showRowHeaders = true)
+        assertEquals(listOf("A", "", ""), Headers.columns(board, Locale.ENGLISH))
+        assertEquals(listOf("", ""), Headers.rows(board))
     }
 }

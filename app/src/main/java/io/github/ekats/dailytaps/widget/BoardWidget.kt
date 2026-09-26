@@ -37,6 +37,8 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
+import androidx.glance.layout.Spacer
+import androidx.glance.layout.width
 import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
@@ -56,6 +58,7 @@ import io.github.ekats.dailytaps.data.Fill
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.data.SlotType
 import io.github.ekats.dailytaps.domain.Days
+import io.github.ekats.dailytaps.domain.Headers
 import io.github.ekats.dailytaps.domain.SlotLogic
 import io.github.ekats.dailytaps.repository
 import kotlinx.coroutines.flow.Flow
@@ -128,8 +131,19 @@ private fun BoardContent(data: BoardWithSlots) {
     val gap = board.spacingDp.dp
     val outer = 4.dp + gap / 2
     val titleHeight = if (board.showTitle && board.title.isNotBlank()) (22f * board.textScale.factor).dp else 0.dp
-    val cellW = ((size.width - outer * 2) / board.cols - gap).coerceAtLeast(1.dp)
-    val cellH = ((size.height - outer * 2 - titleHeight) / board.rows - gap).coerceAtLeast(1.dp)
+    val locale = context.resources.configuration.locales[0]
+    val colHeaders = Headers.columns(board, locale)
+    val rowHeaders = Headers.rows(board)
+    val headerH = if (colHeaders != null) Headers.columnHeightDp(board).dp else 0.dp
+    val headerW = if (rowHeaders != null) Headers.rowWidthDp(board).dp else 0.dp
+    val headerStyle = TextStyle(
+        color = fixed(board.titleColor),
+        fontSize = Headers.textSizeSp(board).sp,
+        fontWeight = FontWeight.Medium,
+        textAlign = TextAlign.Center,
+    )
+    val cellW = ((size.width - outer * 2 - headerW) / board.cols - gap).coerceAtLeast(1.dp)
+    val cellH = ((size.height - outer * 2 - titleHeight - headerH) / board.rows - gap).coerceAtLeast(1.dp)
     val radius = board.cornerRadiusDp.dp
     val boardRadius = (board.cornerRadiusDp + 4).coerceAtMost(28).dp
 
@@ -152,8 +166,24 @@ private fun BoardContent(data: BoardWithSlots) {
                     .clickable(actionStartActivity(openBoardIntent(context, board.id))),
             )
         }
+        if (colHeaders != null) {
+            Row(modifier = GlanceModifier.fillMaxWidth().height(headerH), verticalAlignment = Alignment.CenterVertically) {
+                if (rowHeaders != null) Spacer(GlanceModifier.width(headerW))
+                colHeaders.forEach { h ->
+                    Text(h, maxLines = 1, style = headerStyle, modifier = GlanceModifier.defaultWeight())
+                }
+            }
+        }
         for (r in 0 until board.rows) {
-            Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+            Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
+                if (rowHeaders != null) {
+                    Text(
+                        rowHeaders[r],
+                        maxLines = 2,
+                        style = headerStyle.copy(textAlign = TextAlign.End),
+                        modifier = GlanceModifier.width(headerW).padding(end = 4.dp + gap / 2),
+                    )
+                }
                 for (c in 0 until board.cols) {
                     Box(modifier = GlanceModifier.defaultWeight().fillMaxHeight().padding(gap / 2)) {
                         val slot = data.slotAt(r, c)

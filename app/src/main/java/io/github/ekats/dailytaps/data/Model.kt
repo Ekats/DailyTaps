@@ -50,6 +50,16 @@ enum class SlotType {
     VALUE,
 }
 
+enum class HeaderMode {
+    NONE,
+
+    /** Short weekday names, Monday first, one per column. */
+    WEEKDAYS,
+
+    /** The texts in [BoardEntity.colHeaders]. */
+    CUSTOM,
+}
+
 enum class TextScale(val factor: Float) {
     SMALL(0.8f),
     MEDIUM(1f),

@@ -74,6 +74,12 @@
     <string name="label_size">Label size</string>
     <string name="auto">Auto</string>
     <string name="board_default">Board setting</string>
+    <string name="section_headers">Headers</string>
+    <string name="column_headers">Column headers</string>
+    <string name="header_none">None</string>
+    <string name="header_weekdays">Weekdays</string>
+    <string name="header_custom">Custom</string>
+    <string name="row_headers">Row headers</string>
     <string name="section_layout">Layout</string>
     <string name="spacing">Spacing</string>
     <string name="corner_radius">Corner radius</string>

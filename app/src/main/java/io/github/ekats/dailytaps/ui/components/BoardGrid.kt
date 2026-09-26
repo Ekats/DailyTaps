@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,6 +44,7 @@ import io.github.ekats.dailytaps.data.Fill
 import io.github.ekats.dailytaps.data.GradientDirection
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.domain.Days
+import io.github.ekats.dailytaps.domain.Headers
 import io.github.ekats.dailytaps.domain.SlotLogic
 import kotlin.math.hypot
 
@@ -96,16 +99,28 @@ fun BoardGrid(
     val hasTitle = board.showTitle && board.title.isNotBlank()
     val titleHeight = if (hasTitle) (22f * board.textScale.factor).dp else 0.dp
 
+    val locale = LocalResources.current.configuration.locales[0]
+    val colHeaders = Headers.columns(board, locale)
+    val rowHeaders = Headers.rows(board)
+    val headerH = if (colHeaders != null) Headers.columnHeightDp(board).dp else 0.dp
+    val headerW = if (rowHeaders != null) Headers.rowWidthDp(board).dp else 0.dp
+    val headerStyle = TextStyle(
+        color = Color(board.titleColor),
+        fontSize = Headers.textSizeSp(board).sp,
+        fontWeight = FontWeight.Medium,
+    )
+
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         // Unbounded height (inside a scrolling column) means width decides the cell size.
-        val availW = maxWidth - outer * 2
-        val availH = if (maxHeight.value.isFinite()) maxHeight - outer * 2 - titleHeight else Dp.Infinity
+        val availW = maxWidth - outer * 2 - headerW
+        val availH = if (maxHeight.value.isFinite()) maxHeight - outer * 2 - titleHeight - headerH else Dp.Infinity
         val cell = minOf(availW / board.cols, availH / board.rows).coerceAtLeast(8.dp)
         val gridW = cell * board.cols
+        val fullW = gridW + headerW
 
         Column(
             Modifier
-                .width(gridW + outer * 2)
+                .width(fullW + outer * 2)
                 .clip(boardShape)
                 .background(board.background.toBrush(), boardShape)
                 .padding(outer),
@@ -119,13 +134,38 @@ fun BoardGrid(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
-                        .width(gridW)
+                        .width(fullW)
                         .height(titleHeight)
                         .padding(horizontal = gap / 2),
                 )
             }
+            if (colHeaders != null) {
+                Row(Modifier.height(headerH)) {
+                    if (rowHeaders != null) Box(Modifier.width(headerW))
+                    colHeaders.forEach { h ->
+                        Text(
+                            h,
+                            style = headerStyle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.width(cell).padding(horizontal = 1.dp),
+                        )
+                    }
+                }
+            }
             for (r in 0 until board.rows) {
-                Row {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (rowHeaders != null) {
+                        Text(
+                            rowHeaders[r],
+                            style = headerStyle,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.width(headerW).padding(end = 4.dp + gap / 2),
+                        )
+                    }
                     for (c in 0 until board.cols) {
                         Box(Modifier.size(cell).padding(gap / 2)) {
                             val slot = data.slotAt(r, c) ?: return@Box

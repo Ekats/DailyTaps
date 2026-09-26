@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.FormatPaint
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -111,11 +113,28 @@ fun SlotEditorScreen(slotId: Long, onBack: () -> Unit) {
             boardData?.let { PreviewRow(it, slot) }
 
             SectionTitle(stringResource(R.string.section_text))
-            Text(
-                stringResource(R.string.labels_live_in_board),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            var repeatRow by rememberSaveable { mutableStateOf(false) }
+            var repeatCol by rememberSaveable { mutableStateOf(false) }
+            OutlinedTextField(
+                value = slot.label,
+                onValueChange = { label ->
+                    draft = slot.copy(label = label)
+                    // Same rule as the board's label table: a ticked line gets the same label.
+                    val targets = boardData?.visibleSlots.orEmpty().filter {
+                        it.id == slot.id || (repeatRow && it.row == slot.row) || (repeatCol && it.col == slot.col)
+                    }.ifEmpty { listOf(slot) }
+                    scope.launch { repo.setLabels(targets.associate { it.id to label }) }
+                },
+                label = { Text(stringResource(R.string.slot_label)) },
+                supportingText = { Text(stringResource(R.string.slot_label_help)) },
+                modifier = Modifier.fillMaxWidth(),
             )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = repeatRow, onCheckedChange = { repeatRow = it })
+                Text(stringResource(R.string.repeat_row))
+                Checkbox(checked = repeatCol, onCheckedChange = { repeatCol = it }, modifier = Modifier.padding(start = 16.dp))
+                Text(stringResource(R.string.repeat_column))
+            }
             Stepper(
                 stringResource(R.string.label_size),
                 slot.labelSizeSp,

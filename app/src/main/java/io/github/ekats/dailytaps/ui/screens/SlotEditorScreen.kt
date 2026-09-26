@@ -95,7 +95,7 @@ fun SlotEditorScreen(slotId: Long, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.edit_slot)) },
+                title = { Text(slot?.let { slotName(it, stringResource(R.string.edit_slot)) } ?: stringResource(R.string.edit_slot)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
@@ -111,12 +111,10 @@ fun SlotEditorScreen(slotId: Long, onBack: () -> Unit) {
             boardData?.let { PreviewRow(it, slot) }
 
             SectionTitle(stringResource(R.string.section_text))
-            OutlinedTextField(
-                value = slot.label,
-                onValueChange = { update(slot.copy(label = it)) },
-                label = { Text(stringResource(R.string.slot_label)) },
-                supportingText = { Text(stringResource(R.string.slot_label_help)) },
-                modifier = Modifier.fillMaxWidth(),
+            Text(
+                stringResource(R.string.labels_live_in_board),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Stepper(
                 stringResource(R.string.label_size),

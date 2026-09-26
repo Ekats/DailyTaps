@@ -65,7 +65,7 @@
     <string name="edit_slot">Edit slot</string>
 
     <!-- Board settings -->
-    <string name="tap_slot_to_edit">Tap a slot in the preview to change its text, colors and behaviour.</string>
+    <string name="tap_slot_to_edit">Tap a slot in the preview to change its colors and behaviour. Labels are typed below.</string>
     <string name="section_title">Title</string>
     <string name="show_title">Show title on widget</string>
     <string name="title_color">Title color</string>
@@ -95,8 +95,7 @@
 
     <!-- Slot editor -->
     <string name="section_text">Text</string>
-    <string name="slot_label">Label</string>
-    <string name="slot_label_help">Shown in the slot. Leave empty for a plain colored button.</string>
+    <string name="labels_live_in_board">The label text is typed in the board\'s Labels table. Leave it empty for a plain colored button.</string>
     <string name="show_state_text">Show state under the label</string>
     <string name="show_state_text_help">The state name, the count, or the last value.</string>
     <string name="slot_enabled">Slot visible</string>

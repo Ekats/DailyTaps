@@ -46,7 +46,9 @@ Everything is stored locally with Room. There is no network access and no tracki
 
 In the app, tapping a slot presses it just like the widget does. Long-press a slot for
 corrections (set a state, adjust a counter, clear a value); corrections don't count as taps in the
-graphs. Wrong taps can be deleted from the board's recent activity.
+graphs. Wrong taps can be deleted from the board's recent activity; the slot then goes back to
+whatever its remaining history says (last recorded state, last logged value, counter total without
+the deleted amount).
 
 ## Building
 

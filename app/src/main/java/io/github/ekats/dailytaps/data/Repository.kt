@@ -258,8 +258,35 @@ class Repository(
         onChanged()
     }
 
+    /**
+     * Removes one history entry and puts the slot back to what its remaining history says: the
+     * state of the last remaining entry, the last remaining value, and for counters the running
+     * total without the deleted amount (later entries are corrected too, so graphs agree).
+     */
     suspend fun deleteEvent(id: Long) {
-        events.delete(id)
+        db.withTransaction {
+            val event = events.get(id) ?: return@withTransaction
+            events.delete(id)
+            val slot = slots.slot(event.slotId) ?: return@withTransaction
+            val board = boards.board(slot.boardId) ?: return@withTransaction
+
+            if (slot.type == SlotType.COUNTER && event.delta != 0) {
+                // On a daily-reset board a tap only ever counted toward its own day.
+                val before = if (board.resetDaily) Days.startOfDayMillis(Days.of(event.timestamp) + 1) else Long.MAX_VALUE
+                events.shiftCounts(slot.id, event.timestamp, before, event.delta)
+            }
+
+            val last = events.lastForSlot(slot.id)
+            val lastValue = events.lastValueForSlot(slot.id)?.value
+            val day = last?.let { Days.of(it.timestamp) } ?: 0L
+            val restored = when (slot.type) {
+                SlotType.STATES -> slot.copy(stateIndex = (last?.stateIndex ?: 0).coerceIn(0, slot.states.lastIndex), lastChangedDay = day)
+                SlotType.COUNTER -> SlotLogic.withCount(slot, last?.count ?: 0, day)
+                SlotType.VALUE -> slot.copy(lastValue = lastValue, stateIndex = if (lastValue != null) 1 else 0, lastChangedDay = day)
+            }
+            slots.update(restored)
+        }
+        onChanged()
     }
 
     // endregion

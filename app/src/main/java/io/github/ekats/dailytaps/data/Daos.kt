@@ -68,8 +68,21 @@ interface EventDao {
     @Insert
     suspend fun insert(event: TapEventEntity): Long
 
+    @Query("SELECT * FROM events WHERE id = :id")
+    suspend fun get(id: Long): TapEventEntity?
+
     @Query("DELETE FROM events WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM events WHERE slotId = :slotId ORDER BY timestamp DESC, id DESC LIMIT 1")
+    suspend fun lastForSlot(slotId: Long): TapEventEntity?
+
+    @Query("SELECT * FROM events WHERE slotId = :slotId AND kind = 'VALUE' ORDER BY timestamp DESC, id DESC LIMIT 1")
+    suspend fun lastValueForSlot(slotId: Long): TapEventEntity?
+
+    /** Takes [delta] off the running count recorded by later events in (after, before). */
+    @Query("UPDATE events SET count = count - :delta WHERE slotId = :slotId AND timestamp > :after AND timestamp < :before")
+    suspend fun shiftCounts(slotId: Long, after: Long, before: Long, delta: Int)
 
     @Query("SELECT * FROM events WHERE timestamp >= :from ORDER BY timestamp")
     fun observeSince(from: Long): Flow<List<TapEventEntity>>

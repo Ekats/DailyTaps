@@ -1,7 +1,6 @@
 package io.github.ekats.dailytaps.data
 
 import androidx.room.TypeConverter
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
 val DataJson = Json {
@@ -9,18 +8,20 @@ val DataJson = Json {
     encodeDefaults = true
 }
 
+/**
+ * Room's KSP processor runs before the serialization plugin generates `X.serializer()`, so this
+ * class must only use the reified `encodeToString`/`decodeFromString` entry points.
+ */
 class Converters {
-    private val stylesSerializer = ListSerializer(SlotStyle.serializer())
+    @TypeConverter
+    fun fillToString(fill: Fill): String = DataJson.encodeToString<Fill>(fill)
 
     @TypeConverter
-    fun fillToString(fill: Fill): String = DataJson.encodeToString(Fill.serializer(), fill)
+    fun stringToFill(value: String): Fill = DataJson.decodeFromString<Fill>(value)
 
     @TypeConverter
-    fun stringToFill(value: String): Fill = DataJson.decodeFromString(Fill.serializer(), value)
+    fun stylesToString(styles: List<SlotStyle>): String = DataJson.encodeToString<List<SlotStyle>>(styles)
 
     @TypeConverter
-    fun stylesToString(styles: List<SlotStyle>): String = DataJson.encodeToString(stylesSerializer, styles)
-
-    @TypeConverter
-    fun stringToStyles(value: String): List<SlotStyle> = DataJson.decodeFromString(stylesSerializer, value)
+    fun stringToStyles(value: String): List<SlotStyle> = DataJson.decodeFromString<List<SlotStyle>>(value)
 }

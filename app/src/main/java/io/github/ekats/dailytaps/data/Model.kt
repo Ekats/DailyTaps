@@ -50,6 +50,13 @@ enum class SlotType {
     VALUE,
 }
 
+enum class ResetMode {
+    NEVER,
+    DAILY,
+    WEEKLY,
+    MONTHLY,
+}
+
 enum class HeaderMode {
     NONE,
 

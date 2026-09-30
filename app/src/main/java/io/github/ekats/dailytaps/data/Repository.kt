@@ -1,7 +1,7 @@
 package io.github.ekats.dailytaps.data
 
 import androidx.room.withTransaction
-import io.github.ekats.dailytaps.domain.Days
+import io.github.ekats.dailytaps.domain.ResetSchedule
 import io.github.ekats.dailytaps.domain.SlotLogic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.flowOf
 class Repository(
     private val db: AppDatabase,
     private val onChanged: suspend () -> Unit,
+    /** Runs after a board is added, removed or edited, so the reset wake-up can be re-planned. */
+    private val onSchedulesChanged: suspend () -> Unit = {},
 ) {
     private val boards = db.boardDao()
     private val slots = db.slotDao()
@@ -79,6 +81,7 @@ class Repository(
             boardId
         }
         onChanged()
+        onSchedulesChanged()
         return id
     }
 
@@ -89,11 +92,13 @@ class Repository(
             ensureSlots(b.id, b.rows, b.cols)
         }
         onChanged()
+        onSchedulesChanged()
     }
 
     suspend fun deleteBoard(board: BoardEntity) {
         boards.delete(board)
         onChanged()
+        onSchedulesChanged()
     }
 
     suspend fun duplicateBoard(id: Long): Long? {
@@ -102,10 +107,11 @@ class Repository(
             val boardId = boards.insert(
                 src.board.copy(id = 0, title = src.board.title + " (copy)", sortOrder = boards.nextSortOrder(), createdAt = System.currentTimeMillis()),
             )
-            slots.insertAll(src.slots.map { it.copy(id = 0, boardId = boardId, stateIndex = 0, count = 0, lastValue = null, lastChangedDay = 0) })
+            slots.insertAll(src.slots.map { it.copy(id = 0, boardId = boardId, stateIndex = 0, count = 0, lastValue = null, lastChangedAt = 0) })
             boardId
         }
         onChanged()
+        onSchedulesChanged()
         return newId
     }
 
@@ -160,7 +166,7 @@ class Repository(
                     stateIndex = current.stateIndex.coerceIn(0, states.lastIndex),
                     count = current.count,
                     lastValue = current.lastValue,
-                    lastChangedDay = current.lastChangedDay,
+                    lastChangedAt = current.lastChangedAt,
                 )
             } else {
                 draft.copy(states = states, stateIndex = 0, count = 0, lastValue = null)
@@ -201,9 +207,9 @@ class Repository(
             val slot = slots.slot(slotId) ?: return@withTransaction null
             if (!slot.enabled || slot.type == SlotType.VALUE) return@withTransaction null
             val board = boards.board(slot.boardId) ?: return@withTransaction null
-            val today = Days.today()
-            val current = SlotLogic.effective(slot, board, today)
-            val next = SlotLogic.pressed(current, today)
+            val now = System.currentTimeMillis()
+            val current = SlotLogic.effective(slot, board, now)
+            val next = SlotLogic.pressed(current, now)
             slots.update(next)
             events.insert(
                 TapEventEntity(
@@ -226,7 +232,7 @@ class Repository(
     suspend fun recordValue(slotId: Long, value: Double, source: EventSource) {
         db.withTransaction {
             val slot = slots.slot(slotId) ?: return@withTransaction
-            val next = SlotLogic.withValue(slot, value, Days.today())
+            val next = SlotLogic.withValue(slot, value, System.currentTimeMillis())
             slots.update(next)
             events.insert(
                 TapEventEntity(
@@ -248,9 +254,9 @@ class Repository(
         db.withTransaction {
             val slot = slots.slot(slotId) ?: return@withTransaction
             val board = boards.board(slot.boardId) ?: return@withTransaction
-            val today = Days.today()
-            val current = SlotLogic.effective(slot, board, today)
-            val next = change(current, today)
+            val now = System.currentTimeMillis()
+            val current = SlotLogic.effective(slot, board, now)
+            val next = change(current, now)
             slots.update(next)
             events.insert(
                 TapEventEntity(
@@ -281,18 +287,18 @@ class Repository(
             val board = boards.board(slot.boardId) ?: return@withTransaction
 
             if (slot.type == SlotType.COUNTER && event.delta != 0) {
-                // On a daily-reset board a tap only ever counted toward its own day.
-                val before = if (board.resetDaily) Days.startOfDayMillis(Days.of(event.timestamp) + 1) else Long.MAX_VALUE
+                // A tap only ever counted toward its own reset period.
+                val before = ResetSchedule.of(board).nextReset(event.timestamp) ?: Long.MAX_VALUE
                 events.shiftCounts(slot.id, event.timestamp, before, event.delta)
             }
 
             val last = events.lastForSlot(slot.id)
             val lastValue = events.lastValueForSlot(slot.id)?.value
-            val day = last?.let { Days.of(it.timestamp) } ?: 0L
+            val at = last?.timestamp ?: 0L
             val restored = when (slot.type) {
-                SlotType.STATES -> slot.copy(stateIndex = (last?.stateIndex ?: 0).coerceIn(0, slot.states.lastIndex), lastChangedDay = day)
-                SlotType.COUNTER -> SlotLogic.withCount(slot, last?.count ?: 0, day)
-                SlotType.VALUE -> slot.copy(lastValue = lastValue, stateIndex = if (lastValue != null) 1 else 0, lastChangedDay = day)
+                SlotType.STATES -> slot.copy(stateIndex = (last?.stateIndex ?: 0).coerceIn(0, slot.states.lastIndex), lastChangedAt = at)
+                SlotType.COUNTER -> SlotLogic.withCount(slot, last?.count ?: 0, at)
+                SlotType.VALUE -> slot.copy(lastValue = lastValue, stateIndex = if (lastValue != null) 1 else 0, lastChangedAt = at)
             }
             slots.update(restored)
         }

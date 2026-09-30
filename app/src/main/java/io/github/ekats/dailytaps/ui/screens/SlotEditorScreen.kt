@@ -54,6 +54,7 @@ import io.github.ekats.dailytaps.R
 import io.github.ekats.dailytaps.data.BoardWithSlots
 import io.github.ekats.dailytaps.data.Defaults
 import io.github.ekats.dailytaps.data.Fill
+import io.github.ekats.dailytaps.data.ResetMode
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.data.SlotStyle
 import io.github.ekats.dailytaps.data.SlotType
@@ -293,7 +294,7 @@ private fun PreviewRow(board: BoardWithSlots, slot: SlotEntity, onPick: (SlotEnt
             SlotType.VALUE -> listOf(slot.copy(lastValue = null), slot.copy(lastValue = slot.lastValue ?: 42.0))
         }.take(4)
         previews.forEach { p ->
-            val single = BoardWithSlots(board.board.copy(rows = 1, cols = 1, showTitle = false, resetDaily = false), listOf(p.copy(row = 0, col = 0, enabled = true)))
+            val single = BoardWithSlots(board.board.copy(rows = 1, cols = 1, showTitle = false, resetMode = ResetMode.NEVER), listOf(p.copy(row = 0, col = 0, enabled = true)))
             Box(Modifier.weight(1f).aspectRatio(1f)) {
                 BoardGrid(single, Modifier.fillMaxSize())
             }

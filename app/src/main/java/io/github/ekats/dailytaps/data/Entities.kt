@@ -26,8 +26,19 @@ data class BoardEntity(
     val showRowHeaders: Boolean = false,
     /** Row headers, index = row. */
     val rowHeaders: List<String> = emptyList(),
-    /** When set, every slot returns to its first state (and counters and values clear) each new day. */
+    /**
+     * Legacy on/off daily reset from database v1-3, replaced by [resetMode]. Only read by the v4
+     * migration; kept because dropping a column means rebuilding a table other tables cascade from.
+     */
     val resetDaily: Boolean = false,
+    /** When every slot returns to its first state (counters and values clear). History is kept. */
+    val resetMode: ResetMode = ResetMode.NEVER,
+    /** Local time of the reset, minutes after midnight. */
+    val resetMinute: Int = 0,
+    /** Weekday for weekly resets, 1 = Monday. */
+    val resetWeekday: Int = 1,
+    /** Day of the month for monthly resets; past the month's end means its last day. */
+    val resetMonthDay: Int = 1,
     val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
 )
@@ -68,8 +79,10 @@ data class SlotEntity(
     val counterTarget: Int = 0,
     val lastValue: Double? = null,
     val valueUnit: String = "",
-    /** Local epoch day of the last change, used for the daily reset. */
+    /** Legacy local epoch day of the last change (database v1-3); see [lastChangedAt]. */
     val lastChangedDay: Long = 0,
+    /** When the slot last changed (epoch millis), compared with the board's reset schedule. */
+    val lastChangedAt: Long = 0,
 )
 
 /** One recorded interaction. Graphs are computed from these. */

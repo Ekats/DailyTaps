@@ -20,9 +20,9 @@ data class SlotAppearance(
 
 object SlotLogic {
 
-    /** The slot as it should be seen on [today], applying the board's daily reset. */
-    fun effective(slot: SlotEntity, board: BoardEntity, today: Long): SlotEntity =
-        if (board.resetDaily && slot.lastChangedDay != today && hasProgress(slot)) {
+    /** The slot as it should be seen at [now], applying the board's reset schedule. */
+    fun effective(slot: SlotEntity, board: BoardEntity, now: Long): SlotEntity =
+        if (hasProgress(slot) && ResetSchedule.of(board).resetBetween(slot.lastChangedAt, now)) {
             slot.copy(stateIndex = 0, count = 0, lastValue = null)
         } else {
             slot
@@ -31,30 +31,30 @@ object SlotLogic {
     private fun hasProgress(slot: SlotEntity) = slot.stateIndex != 0 || slot.count != 0 || slot.lastValue != null
 
     /** Result of a tap on a STATES or COUNTER slot. VALUE slots go through [withValue] instead. */
-    fun pressed(slot: SlotEntity, today: Long): SlotEntity = when (slot.type) {
+    fun pressed(slot: SlotEntity, now: Long): SlotEntity = when (slot.type) {
         SlotType.STATES -> slot.copy(
             stateIndex = (slot.stateIndex.coerceIn(0, slot.states.lastIndex) + 1) % slot.states.size.coerceAtLeast(1),
-            lastChangedDay = today,
+            lastChangedAt = now,
         )
         SlotType.COUNTER -> slot.copy(
             count = slot.count + slot.counterStep,
             stateIndex = counterStateIndex(slot.count + slot.counterStep, slot.counterTarget),
-            lastChangedDay = today,
+            lastChangedAt = now,
         )
         SlotType.VALUE -> slot
     }
 
-    fun withValue(slot: SlotEntity, value: Double, today: Long): SlotEntity =
-        slot.copy(lastValue = value, stateIndex = 1, lastChangedDay = today)
+    fun withValue(slot: SlotEntity, value: Double, now: Long): SlotEntity =
+        slot.copy(lastValue = value, stateIndex = 1, lastChangedAt = now)
 
-    fun withCount(slot: SlotEntity, count: Int, today: Long): SlotEntity =
-        slot.copy(count = count, stateIndex = counterStateIndex(count, slot.counterTarget), lastChangedDay = today)
+    fun withCount(slot: SlotEntity, count: Int, now: Long): SlotEntity =
+        slot.copy(count = count, stateIndex = counterStateIndex(count, slot.counterTarget), lastChangedAt = now)
 
-    fun withState(slot: SlotEntity, index: Int, today: Long): SlotEntity =
-        slot.copy(stateIndex = index.coerceIn(0, slot.states.lastIndex), lastChangedDay = today)
+    fun withState(slot: SlotEntity, index: Int, now: Long): SlotEntity =
+        slot.copy(stateIndex = index.coerceIn(0, slot.states.lastIndex), lastChangedAt = now)
 
-    fun cleared(slot: SlotEntity, today: Long): SlotEntity =
-        slot.copy(stateIndex = 0, count = 0, lastValue = null, lastChangedDay = today)
+    fun cleared(slot: SlotEntity, now: Long): SlotEntity =
+        slot.copy(stateIndex = 0, count = 0, lastValue = null, lastChangedAt = now)
 
     /** Switches type, keeping the colors of the first states and resetting progress. */
     fun retyped(slot: SlotEntity, type: SlotType): SlotEntity {
@@ -76,8 +76,8 @@ object SlotLogic {
         else -> 0f
     }
 
-    fun appearance(slot: SlotEntity, board: BoardEntity, today: Long): SlotAppearance {
-        val s = effective(slot, board, today)
+    fun appearance(slot: SlotEntity, board: BoardEntity, now: Long): SlotAppearance {
+        val s = effective(slot, board, now)
         val states = s.states.ifEmpty { listOf(Defaults.offStyle()) }
         fun style(i: Int): SlotStyle = states[i.coerceIn(0, states.lastIndex)]
 

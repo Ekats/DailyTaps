@@ -52,11 +52,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ekats.dailytaps.R
 import io.github.ekats.dailytaps.data.BoardWithSlots
+import io.github.ekats.dailytaps.data.ResetMode
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.data.SlotType
 import io.github.ekats.dailytaps.domain.ColorMath
 import io.github.ekats.dailytaps.domain.DayValue
 import io.github.ekats.dailytaps.domain.Days
+import io.github.ekats.dailytaps.domain.ResetSchedule
 import io.github.ekats.dailytaps.domain.SlotLogic
 import io.github.ekats.dailytaps.domain.Stats
 import io.github.ekats.dailytaps.domain.StatsReport
@@ -96,8 +98,9 @@ fun StatsScreen(boardId: Long?, onBack: () -> Unit) {
 
     val board = boards.firstOrNull { it.board.id == boardId }
     val slot = board?.visibleSlots?.firstOrNull { it.id == slotId }
-    val report = remember(events, fromDay, today, slot, board?.board?.resetDaily) {
-        Stats.report(events, fromDay, today, slot, carryOver = board?.board?.resetDaily != true)
+    val schedule = board?.board?.let(ResetSchedule::of) ?: ResetSchedule(ResetMode.NEVER)
+    val report = remember(events, fromDay, today, slot, schedule) {
+        Stats.report(events, fromDay, today, slot, schedule)
     }
 
     Scaffold(

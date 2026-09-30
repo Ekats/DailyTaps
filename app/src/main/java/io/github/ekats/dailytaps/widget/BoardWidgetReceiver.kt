@@ -12,7 +12,7 @@ class BoardWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        DayRolloverWorker.schedule(context)
+        context.appScope.launch { DayRolloverWorker.schedule(context) }
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {

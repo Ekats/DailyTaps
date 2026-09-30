@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [BoardEntity::class, SlotEntity::class, TapEventEntity::class, WidgetBindingEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -39,9 +39,26 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v4: reset schedules. The daily switch becomes a DAILY schedule at midnight. Slots get
+         * lastChangedAt: noon UTC of their old epoch day lands inside that local day for any time
+         * zone within ±11 h, which is all the reset comparison needs.
+         */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE boards ADD COLUMN resetMode TEXT NOT NULL DEFAULT 'NEVER'")
+                db.execSQL("ALTER TABLE boards ADD COLUMN resetMinute INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE boards ADD COLUMN resetWeekday INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE boards ADD COLUMN resetMonthDay INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("UPDATE boards SET resetMode = 'DAILY' WHERE resetDaily != 0")
+                db.execSQL("ALTER TABLE slots ADD COLUMN lastChangedAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE slots SET lastChangedAt = lastChangedDay * 86400000 + 43200000 WHERE lastChangedDay > 0")
+            }
+        }
+
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "dailytaps.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
     }
 }

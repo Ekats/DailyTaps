@@ -6,6 +6,7 @@ import io.github.ekats.dailytaps.data.Defaults
 import io.github.ekats.dailytaps.data.Fill
 import io.github.ekats.dailytaps.data.GradientDirection
 import io.github.ekats.dailytaps.data.HeaderMode
+import io.github.ekats.dailytaps.data.ResetMode
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.data.SlotStyle
 import io.github.ekats.dailytaps.data.SlotType
@@ -19,7 +20,10 @@ import java.util.Locale
 
 class SlotLogicTest {
     private val board = BoardEntity(id = 1)
-    private val today = 20_000L
+    // SlotLogic reads the reset schedule in the device's zone, so test times are built in it too.
+    private val zone = java.time.ZoneId.systemDefault()
+    private val today = java.time.LocalDate.of(2026, 9, 30).atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+    private val day = 86_400_000L
 
     private fun slot(type: SlotType = SlotType.STATES, states: List<SlotStyle> = Defaults.statesFor(type)) =
         SlotEntity(id = 1, boardId = 1, row = 0, col = 0, type = type, states = states)
@@ -28,7 +32,7 @@ class SlotLogicTest {
     fun `toggle flips between two states and wraps`() {
         val on = SlotLogic.pressed(slot(), today)
         assertEquals(1, on.stateIndex)
-        assertEquals(today, on.lastChangedDay)
+        assertEquals(today, on.lastChangedAt)
         assertEquals(0, SlotLogic.pressed(on, today).stateIndex)
     }
 
@@ -60,18 +64,18 @@ class SlotLogicTest {
 
     @Test
     fun `daily reset only applies on a later day`() {
-        val resetting = board.copy(resetDaily = true)
+        val resetting = board.copy(resetMode = ResetMode.DAILY)
         val on = SlotLogic.pressed(slot(), today)
-        assertEquals(1, SlotLogic.effective(on, resetting, today).stateIndex)
-        assertEquals(0, SlotLogic.effective(on, resetting, today + 1).stateIndex)
-        // Without the setting the state survives midnight.
-        assertEquals(1, SlotLogic.effective(on, board, today + 1).stateIndex)
+        assertEquals(1, SlotLogic.effective(on, resetting, today + 3_600_000).stateIndex)
+        assertEquals(0, SlotLogic.effective(on, resetting, today + day).stateIndex)
+        // Without a schedule the state survives midnight.
+        assertEquals(1, SlotLogic.effective(on, board, today + day).stateIndex)
     }
 
     @Test
     fun `pressing after midnight on a resetting board starts from the first state`() {
-        val resetting = board.copy(resetDaily = true)
-        val yesterdayOn = SlotLogic.pressed(slot(), today - 1)
+        val resetting = board.copy(resetMode = ResetMode.DAILY)
+        val yesterdayOn = SlotLogic.pressed(slot(), today - day)
         val next = SlotLogic.pressed(SlotLogic.effective(yesterdayOn, resetting, today), today)
         assertEquals(1, next.stateIndex)
     }

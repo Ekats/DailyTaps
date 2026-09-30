@@ -89,8 +89,16 @@
     <string name="section_background">Background</string>
     <string name="board_background">Board background</string>
     <string name="section_behaviour">Behaviour</string>
-    <string name="reset_daily">Reset every day</string>
-    <string name="reset_daily_help">At midnight every slot goes back to its first state, counters to 0 and values are cleared. History is kept.</string>
+    <string name="section_reset">Reset</string>
+    <string name="reset_never">Never</string>
+    <string name="reset_daily">Daily</string>
+    <string name="reset_weekly">Weekly</string>
+    <string name="reset_monthly">Monthly</string>
+    <string name="reset_never_help">Slots keep their state until you tap them.</string>
+    <string name="reset_time">Time</string>
+    <string name="reset_month_day">Day of month</string>
+    <string name="reset_next">Next reset: %s</string>
+    <string name="reset_help">At the reset every slot goes back to its first state, counters to 0 and values are cleared. History is kept. Days past the end of a shorter month reset on its last day.</string>
 
     <!-- Slot editor -->
     <string name="section_text">Text</string>

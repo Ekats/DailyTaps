@@ -43,7 +43,6 @@ import io.github.ekats.dailytaps.data.BoardWithSlots
 import io.github.ekats.dailytaps.data.Fill
 import io.github.ekats.dailytaps.data.GradientDirection
 import io.github.ekats.dailytaps.data.SlotEntity
-import io.github.ekats.dailytaps.domain.Days
 import io.github.ekats.dailytaps.domain.Headers
 import io.github.ekats.dailytaps.domain.SlotLogic
 import kotlin.math.hypot
@@ -84,7 +83,7 @@ private class CornerRadialBrush(private val colors: List<Color>) : ShaderBrush()
 fun BoardGrid(
     data: BoardWithSlots,
     modifier: Modifier = Modifier,
-    today: Long = Days.today(),
+    now: Long = System.currentTimeMillis(),
     selected: SlotEntity? = null,
     showDisabled: Boolean = false,
     onSlotClick: ((SlotEntity) -> Unit)? = null,
@@ -170,7 +169,7 @@ fun BoardGrid(
                         Box(Modifier.size(cell).padding(gap / 2)) {
                             val slot = data.slotAt(r, c) ?: return@Box
                             if (!slot.enabled && !showDisabled) return@Box
-                            val look = SlotLogic.appearance(slot, board, today)
+                            val look = SlotLogic.appearance(slot, board, now)
                             val isSelected = selected?.id == slot.id
                             val labelSize = SlotLogic.labelSizeSp(slot, board, (cell - gap).value)
                             Box(

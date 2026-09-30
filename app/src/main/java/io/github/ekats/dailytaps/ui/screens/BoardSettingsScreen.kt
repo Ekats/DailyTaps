@@ -1,6 +1,23 @@
 package io.github.ekats.dailytaps.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.ui.platform.LocalResources
+import io.github.ekats.dailytaps.data.BoardEntity
+import io.github.ekats.dailytaps.data.ResetMode
+import io.github.ekats.dailytaps.domain.ResetSchedule
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle as JavaTextStyle
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -43,7 +60,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ekats.dailytaps.R
-import io.github.ekats.dailytaps.data.BoardEntity
 import io.github.ekats.dailytaps.data.MAX_GRID
 import io.github.ekats.dailytaps.data.MIN_GRID
 import io.github.ekats.dailytaps.data.TextScale
@@ -189,12 +205,8 @@ fun BoardSettingsScreen(boardId: Long, onBack: () -> Unit, onEditSlot: (Long) ->
                 SectionTitle(stringResource(R.string.section_background))
                 FillEditor(stringResource(R.string.board_background), board.background) { save(board.copy(background = it)) }
 
-                SectionTitle(stringResource(R.string.section_behaviour))
-                SwitchRow(
-                    stringResource(R.string.reset_daily),
-                    board.resetDaily,
-                    supporting = stringResource(R.string.reset_daily_help),
-                ) { save(board.copy(resetDaily = it)) }
+                SectionTitle(stringResource(R.string.section_reset))
+                ResetEditor(board) { save(it) }
             }
         }
     }
@@ -243,3 +255,87 @@ private fun CompactField(value: String, hint: String, modifier: Modifier = Modif
 /** A copy of the list with at least [size] entries, so any index up to it can be set. */
 private fun List<String>.padded(size: Int): MutableList<String> =
     toMutableList().apply { while (this.size < size) add("") }
+
+/** Never / daily / weekly / monthly, the time, and the weekday or day of month. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun ResetEditor(board: BoardEntity, onChange: (BoardEntity) -> Unit) {
+    var pickTime by remember { mutableStateOf(false) }
+    val locale = LocalResources.current.configuration.locales[0]
+    val schedule = ResetSchedule.of(board)
+
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        val labels = listOf(R.string.reset_never, R.string.reset_daily, R.string.reset_weekly, R.string.reset_monthly)
+        ResetMode.entries.forEachIndexed { i, mode ->
+            SegmentedButton(
+                selected = board.resetMode == mode,
+                onClick = { onChange(board.copy(resetMode = mode)) },
+                shape = SegmentedButtonDefaults.itemShape(i, ResetMode.entries.size),
+            ) { Text(stringResource(labels[i]), maxLines = 1) }
+        }
+    }
+    if (board.resetMode == ResetMode.NEVER) {
+        Text(
+            stringResource(R.string.reset_never_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        return
+    }
+
+    if (board.resetMode == ResetMode.WEEKLY) {
+        FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            // Monday first.
+            for (d in 1..7) {
+                FilterChip(
+                    selected = board.resetWeekday == d,
+                    onClick = { onChange(board.copy(resetWeekday = d)) },
+                    label = { Text(DayOfWeek.of(d).getDisplayName(JavaTextStyle.SHORT, locale)) },
+                )
+            }
+        }
+    }
+    if (board.resetMode == ResetMode.MONTHLY) {
+        Stepper(stringResource(R.string.reset_month_day), board.resetMonthDay, 1..31) {
+            onChange(board.copy(resetMonthDay = it))
+        }
+    }
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.reset_time), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        OutlinedButton(onClick = { pickTime = true }) {
+            Text("%02d:%02d".format(board.resetMinute / 60, board.resetMinute % 60), style = MaterialTheme.typography.titleMedium)
+        }
+    }
+    // Spell out the next reset, so the setting can be checked at a glance.
+    schedule.nextReset(System.currentTimeMillis())?.let { next ->
+        val text = Instant.ofEpochMilli(next).atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("EEE d MMM, HH:mm", locale))
+        Text(
+            stringResource(R.string.reset_next, text),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    Text(
+        stringResource(R.string.reset_help),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 4.dp),
+    )
+
+    if (pickTime) {
+        val state = rememberTimePickerState(board.resetMinute / 60, board.resetMinute % 60, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { pickTime = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickTime = false
+                    onChange(board.copy(resetMinute = state.hour * 60 + state.minute))
+                }) { Text(stringResource(R.string.ok)) }
+            },
+            dismissButton = { TextButton(onClick = { pickTime = false }) { Text(stringResource(R.string.cancel)) } },
+            text = { TimePicker(state) },
+        )
+    }
+}

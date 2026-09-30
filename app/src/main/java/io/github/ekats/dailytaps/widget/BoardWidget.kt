@@ -57,7 +57,6 @@ import io.github.ekats.dailytaps.data.EventSource
 import io.github.ekats.dailytaps.data.Fill
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.data.SlotType
-import io.github.ekats.dailytaps.domain.Days
 import io.github.ekats.dailytaps.domain.Headers
 import io.github.ekats.dailytaps.domain.SlotLogic
 import io.github.ekats.dailytaps.repository
@@ -126,7 +125,7 @@ private fun BoardContent(data: BoardWithSlots) {
     val board = data.board
     val size = LocalSize.current
     val density = context.resources.displayMetrics.density
-    val today = Days.today()
+    val now = System.currentTimeMillis()
 
     val gap = board.spacingDp.dp
     val outer = 4.dp + gap / 2
@@ -188,7 +187,7 @@ private fun BoardContent(data: BoardWithSlots) {
                     Box(modifier = GlanceModifier.defaultWeight().fillMaxHeight().padding(gap / 2)) {
                         val slot = data.slotAt(r, c)
                         if (slot != null && slot.enabled) {
-                            SlotCell(slot, board, today, cellW, cellH, radius, density)
+                            SlotCell(slot, board, now, cellW, cellH, radius, density)
                         }
                     }
                 }
@@ -201,14 +200,14 @@ private fun BoardContent(data: BoardWithSlots) {
 private fun SlotCell(
     slot: SlotEntity,
     board: BoardEntity,
-    today: Long,
+    now: Long,
     width: Dp,
     height: Dp,
     radius: Dp,
     density: Float,
 ) {
     val context = LocalContext.current
-    val look = SlotLogic.appearance(slot, board, today)
+    val look = SlotLogic.appearance(slot, board, now)
     val action: Action = if (slot.type == SlotType.VALUE) {
         actionStartActivity(ValueInputActivity.intent(context, slot.id))
     } else {

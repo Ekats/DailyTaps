@@ -55,7 +55,6 @@ import io.github.ekats.dailytaps.data.EventSource
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.data.SlotType
 import io.github.ekats.dailytaps.data.TapEventEntity
-import io.github.ekats.dailytaps.domain.Days
 import io.github.ekats.dailytaps.domain.SlotLogic
 import io.github.ekats.dailytaps.repository
 import io.github.ekats.dailytaps.ui.components.BoardGrid
@@ -195,7 +194,7 @@ fun BoardScreen(
     actionSlot?.let { s ->
         val current = board?.slots?.firstOrNull { it.id == s.id } ?: s
         SlotActionsSheet(
-            slot = board?.let { SlotLogic.effective(current, it.board, Days.today()) } ?: current,
+            slot = board?.let { SlotLogic.effective(current, it.board, System.currentTimeMillis()) } ?: current,
             onDismiss = { actionSlot = null },
             onEdit = {
                 actionSlot = null
@@ -277,7 +276,7 @@ private fun SlotActionsSheet(
                         slot.states.forEachIndexed { i, st ->
                             FilterChip(
                                 selected = slot.stateIndex == i,
-                                onClick = { onAdjust { s, today -> SlotLogic.withState(s, i, today) } },
+                                onClick = { onAdjust { s, now -> SlotLogic.withState(s, i, now) } },
                                 label = { Text(st.name.ifBlank { "#${i + 1}" }) },
                             )
                         }
@@ -286,13 +285,13 @@ private fun SlotActionsSheet(
                 SlotType.COUNTER -> {
                     Text(stringResource(R.string.count_is, slot.count), style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { onAdjust { s, today -> SlotLogic.withCount(s, s.count - s.counterStep, today) } }) {
+                        OutlinedButton(onClick = { onAdjust { s, now -> SlotLogic.withCount(s, s.count - s.counterStep, now) } }) {
                             Text("−${slot.counterStep}")
                         }
-                        OutlinedButton(onClick = { onAdjust { s, today -> SlotLogic.withCount(s, s.count + s.counterStep, today) } }) {
+                        OutlinedButton(onClick = { onAdjust { s, now -> SlotLogic.withCount(s, s.count + s.counterStep, now) } }) {
                             Text("+${slot.counterStep}")
                         }
-                        OutlinedButton(onClick = { onAdjust { s, today -> SlotLogic.withCount(s, 0, today) } }) {
+                        OutlinedButton(onClick = { onAdjust { s, now -> SlotLogic.withCount(s, 0, now) } }) {
                             Text(stringResource(R.string.reset))
                         }
                     }
@@ -300,7 +299,7 @@ private fun SlotActionsSheet(
                 SlotType.VALUE -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         OutlinedButton(onClick = onLogValue) { Text(stringResource(R.string.log_value)) }
-                        OutlinedButton(onClick = { onAdjust { s, today -> SlotLogic.cleared(s, today) } }) {
+                        OutlinedButton(onClick = { onAdjust { s, now -> SlotLogic.cleared(s, now) } }) {
                             Text(stringResource(R.string.clear))
                         }
                     }

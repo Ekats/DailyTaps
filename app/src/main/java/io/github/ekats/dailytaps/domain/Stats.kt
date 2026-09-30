@@ -1,6 +1,7 @@
 package io.github.ekats.dailytaps.domain
 
 import io.github.ekats.dailytaps.data.EventKind
+import io.github.ekats.dailytaps.data.ResetMode
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.data.SlotType
 import io.github.ekats.dailytaps.data.TapEventEntity
@@ -67,7 +68,7 @@ object Stats {
         fromDay: Long,
         toDay: Long,
         slot: SlotEntity? = null,
-        carryOver: Boolean = true,
+        schedule: ResetSchedule = ResetSchedule(ResetMode.NEVER),
         zone: ZoneId = ZoneId.systemDefault(),
     ): StatsReport {
         val inRange = events
@@ -95,7 +96,7 @@ object Stats {
             .map { (id, n) -> SlotTotal(id, n) }
             .sortedByDescending { it.taps }
 
-        val completion = if (slot != null) completion(slot, inRange, days, carryOver, zone) else emptyList()
+        val completion = if (slot != null) completion(slot, inRange, days, schedule, zone) else emptyList()
         val completionRate = completion.takeIf { it.isNotEmpty() }?.let { c -> c.count { it.value > 0 }.toDouble() / c.size }
 
         val counterDaily = if (slot?.type == SlotType.COUNTER) {
@@ -126,34 +127,28 @@ object Stats {
     }
 
     /**
-     * 1.0 for days the slot finished "done", 0.0 otherwise. Unless the board resets daily, a state
-     * carries over to the following days, so a toggle left on counts until it is switched off.
-     * The state before [days] starts is taken as the first one.
+     * 1.0 for days the slot finished "done", 0.0 otherwise. A state carries over to later days
+     * until the board's [schedule] resets it, so a toggle left on counts until it is switched off
+     * or reset. The state before [days] starts is taken as the first one.
      */
     private fun completion(
         slot: SlotEntity,
         events: List<TapEventEntity>,
         days: List<Long>,
-        carryOver: Boolean,
+        schedule: ResetSchedule,
         zone: ZoneId,
     ): List<DayValue> {
-        val byDay = events.sortedBy { it.timestamp }.groupBy { Days.of(it.timestamp, zone) }
-        var state = 0
-        var count = 0
+        val sorted = events.sortedBy { it.timestamp }
+        val byDay = sorted.groupBy { Days.of(it.timestamp, zone) }
         return days.map { day ->
-            val todays = byDay[day].orEmpty()
-            if (!carryOver) {
-                state = 0
-                count = 0
-            }
-            todays.lastOrNull()?.let {
-                state = it.stateIndex
-                count = it.count
-            }
+            // The state at the end of the day: from the last event so far, unless a reset came after it.
+            val endOfDay = Days.startOfDayMillis(day + 1, zone) - 1
+            val last = sorted.lastOrNull { it.timestamp <= endOfDay }
+                ?.takeUnless { schedule.resetBetween(it.timestamp, endOfDay, zone) }
             val done = when (slot.type) {
-                SlotType.VALUE -> todays.any { it.kind == EventKind.VALUE }
-                SlotType.COUNTER -> SlotLogic.counterProgress(count, slot.counterTarget) >= 1f
-                SlotType.STATES -> state != 0
+                SlotType.VALUE -> byDay[day].orEmpty().any { it.kind == EventKind.VALUE }
+                SlotType.COUNTER -> SlotLogic.counterProgress(last?.count ?: 0, slot.counterTarget) >= 1f
+                SlotType.STATES -> (last?.stateIndex ?: 0) != 0
             }
             DayValue(day, if (done) 1.0 else 0.0)
         }

@@ -5,10 +5,12 @@ import io.github.ekats.dailytaps.data.BoardWithSlots
 import io.github.ekats.dailytaps.data.CsvExport
 import io.github.ekats.dailytaps.data.EventKind
 import io.github.ekats.dailytaps.data.EventSource
+import io.github.ekats.dailytaps.data.ResetMode
 import io.github.ekats.dailytaps.data.SlotEntity
 import io.github.ekats.dailytaps.data.SlotType
 import io.github.ekats.dailytaps.data.TapEventEntity
 import io.github.ekats.dailytaps.domain.Days
+import io.github.ekats.dailytaps.domain.ResetSchedule
 import io.github.ekats.dailytaps.domain.Stats
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -74,12 +76,21 @@ class StatsTest {
     fun `toggle left on counts as done until switched off`() {
         val slot = SlotEntity(id = 1, boardId = 1, row = 0, col = 0)
         val events = listOf(event(day0, state = 1), event(day0 + 2, state = 0))
-        val carried = Stats.report(events, day0, day0 + 3, slot, carryOver = true, zone = zone)
+        val carried = Stats.report(events, day0, day0 + 3, slot, ResetSchedule(ResetMode.NEVER), zone = zone)
         assertEquals(listOf(1.0, 1.0, 0.0, 0.0), carried.completion.map { it.value })
         assertEquals(0.5, carried.completionRate!!, 1e-9)
 
-        val daily = Stats.report(events, day0, day0 + 3, slot, carryOver = false, zone = zone)
+        val daily = Stats.report(events, day0, day0 + 3, slot, ResetSchedule(ResetMode.DAILY), zone = zone)
         assertEquals(listOf(1.0, 0.0, 0.0, 0.0), daily.completion.map { it.value })
+    }
+
+    @Test
+    fun `weekly reset keeps a toggle done until the reset`() {
+        val slot = SlotEntity(id = 1, boardId = 1, row = 0, col = 0)
+        // 2026-09-01 is a Tuesday; the weekly reset is Monday 00:01, which falls on day0 + 6.
+        val weekly = ResetSchedule(ResetMode.WEEKLY, minuteOfDay = 1, weekday = 1)
+        val r = Stats.report(listOf(event(day0, state = 1)), day0, day0 + 7, slot, weekly, zone = zone)
+        assertEquals(listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0), r.completion.map { it.value })
     }
 
     @Test
@@ -89,7 +100,7 @@ class StatsTest {
             event(day0, delta = 1, count = 1), event(day0, delta = 1, count = 2), event(day0, delta = 1, count = 3),
             event(day0 + 1, delta = 1, count = 1),
         )
-        val r = Stats.report(events, day0, day0 + 1, slot, carryOver = false, zone = zone)
+        val r = Stats.report(events, day0, day0 + 1, slot, ResetSchedule(ResetMode.DAILY), zone = zone)
         assertEquals(listOf(3.0, 1.0), r.counterDaily.map { it.value })
         assertEquals(listOf(1.0, 0.0), r.completion.map { it.value })
     }

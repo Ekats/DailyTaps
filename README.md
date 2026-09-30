@@ -21,8 +21,9 @@ An Android app for tables of buttons on your home screen, plus graphs of everyth
 - **Text**: optional board title; each slot has an optional label (with a board-wide or per-slot
   size) and can show its state name, count or last value under it. Boards can have column headers
   (weekdays starting Monday, or custom) and row headers.
-- **Daily reset** (per board): at local midnight every slot goes back to its first state. History
-  is kept.
+- **Reset schedule** (per board): never, daily, weekly (pick the weekday, e.g. Monday) or monthly
+  (pick the day), at a set local time such as 00:01. At the reset every slot goes back to its first
+  state; history is kept. The board settings show when the next reset is.
 - **Graphs** per board, per slot or across all boards, for 7 days, 30 days, 90 days or a year:
   - taps per day
   - calendar heatmap of activity, or of days a slot was "done"

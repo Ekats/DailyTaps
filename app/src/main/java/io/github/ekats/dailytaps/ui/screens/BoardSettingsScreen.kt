@@ -331,7 +331,7 @@ private fun ResetEditor(board: BoardEntity, onChange: (BoardEntity) -> Unit) {
             confirmButton = {
                 TextButton(onClick = {
                     pickTime = false
-                    onChange(board.copy(resetMinute = state.hour * 60 + state.minute))
+                    onChange(board.copy(resetMinute = ResetSchedule.unambiguousMinute(state.hour * 60 + state.minute)))
                 }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = { TextButton(onClick = { pickTime = false }) { Text(stringResource(R.string.cancel)) } },

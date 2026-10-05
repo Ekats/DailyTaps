@@ -78,6 +78,9 @@ data class ResetSchedule(
     }
 
     companion object {
+        /** 00:00 is ambiguous (start or end of the day?), so it becomes 00:01. */
+        fun unambiguousMinute(minute: Int): Int = if (minute == 0) 1 else minute.coerceIn(1, 1439)
+
         fun of(board: BoardEntity) = ResetSchedule(board.resetMode, board.resetMinute, board.resetWeekday, board.resetMonthDay)
     }
 }

@@ -33,8 +33,11 @@ data class BoardEntity(
     val resetDaily: Boolean = false,
     /** When every slot returns to its first state (counters and values clear). History is kept. */
     val resetMode: ResetMode = ResetMode.NEVER,
-    /** Local time of the reset, minutes after midnight. */
-    val resetMinute: Int = 0,
+    /**
+     * Local time of the reset, minutes after midnight. Never 0: 00:00 reads as either end of a
+     * day, so midnight is stored as 00:01 (see [ResetSchedule.unambiguousMinute]).
+     */
+    val resetMinute: Int = 1,
     /** Weekday for weekly resets, 1 = Monday. */
     val resetWeekday: Int = 1,
     /** Day of the month for monthly resets; past the month's end means its last day. */

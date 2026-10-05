@@ -60,4 +60,11 @@ class ResetScheduleTest {
         val daily = ResetSchedule(ResetMode.DAILY)
         assertEquals(at("2026-10-26T00:00"), daily.nextReset(at("2026-10-25T12:00"), zone))
     }
+
+    @Test
+    fun `midnight is stored as one minute past`() {
+        assertEquals(1, ResetSchedule.unambiguousMinute(0))
+        assertEquals(1, ResetSchedule.unambiguousMinute(1))
+        assertEquals(23 * 60 + 59, ResetSchedule.unambiguousMinute(23 * 60 + 59))
+    }
 }
